@@ -1,6 +1,6 @@
 # py-telegram-logger
 
-Minimal Python logger with Telegram notifications.
+Minimal Python logger with Telegram notifications. (150 loc)
 
 ## Installation
 
