@@ -88,6 +88,7 @@ def send_telegram(message: str, is_error: bool = False):
                 "parse_mode": "HTML"
             }
             requests.post(url, json=data, timeout=5)
+            time.sleep(0.05)
         except:
             pass
 
