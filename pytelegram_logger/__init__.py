@@ -141,25 +141,3 @@ def log(message: str, is_error: bool = False, send_telegram: bool = False, save:
         raise RuntimeError("Logger not initialized. Call init_telegram_logger() first")
     
     state.queue.put((message, is_error, send_telegram, save))
-
-
-if __name__ == "__main__":
-    init_telegram_logger(
-        log_dir="logs",
-        telegram_token_logs="123456:ABC",
-        telegram_token_errors="789012:XYZ",
-        telegram_chat_ids=["-1001234567890"],
-        retention_days=30
-    )
-    
-    log("Aplicación iniciada")
-    log("Usuario conectado", send_telegram=True)
-    log("Debug menor", save=False)
-    
-    try:
-        result = 10 / 0
-    except Exception as e:
-        log(f"Error crítico: {str(e)}", is_error=True, send_telegram=True)
-        log("Error menor", is_error=True)
-    
-    time.sleep(2)
