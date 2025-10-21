@@ -77,6 +77,7 @@ Files older than `retention_days` are deleted automatically (checked hourly).
 
 ```python
 from pytelegram_logger import init_telegram_logger, log
+import time
 
 init_telegram_logger(retention_days=7)
 
@@ -98,6 +99,8 @@ log(f"TX: {gcode}")
 log(f"RX: {response}")
 if "ALARM" in response:
     log(f"ALARM: {response}", is_error=True, send_telegram=True)
+
+time.sleep(5) # wait to allow async logs to complete
 ```
 
 ## Performance
