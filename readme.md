@@ -5,7 +5,9 @@ Minimal Python logger with Telegram notifications. (150 loc)
 ## Installation
 
 ```bash
-pip install py-telegram-logger
+git clone https://github.com/offerrall/py-telegram-logger
+cd py-telegram-logger
+pip install .
 ```
 
 ## Usage
