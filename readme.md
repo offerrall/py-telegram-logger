@@ -69,12 +69,6 @@ logs/
 
 Files older than `retention_days` are deleted automatically (checked hourly).
 
-## Telegram Setup
-
-1. Create bot: [@BotFather](https://t.me/botfather) → `/newbot`
-2. Get token: `123456789:ABCdefGHIjklMNOpqrs`
-3. Get chat ID: Message bot, visit `https://api.telegram.org/bot<TOKEN>/getUpdates`
-
 ## Examples
 
 ```python
