@@ -105,7 +105,8 @@ log("Payment failed", is_error=True, send_telegram=True)  # File + Telegram
 
 ## Features
 
-- **80,000+ logs/second** on typical hardware
+- **195,000+ logs/second** on Linux, normal hardware
+- **80,000+ logs/second** on Windows, normal hardware
 - **Named log files** - separate files per application
 - **Async & thread-safe** - non-blocking queue-based
 - **Auto-rotation** - daily files with configurable retention
