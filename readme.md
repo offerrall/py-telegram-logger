@@ -181,9 +181,9 @@ log("Info", send_telegram=True)  # Error: telegram_token_logs not configured
 ## Performance
 
 - < 1ms per log call (non-blocking)
-- 10,000+ logs/second throughput
+- 5,000+ logs/second throughput on typical hardware
 - Thread-safe for multi-threaded applications
-- Automatic queue management (10,000 message buffer)
+- Handles burst logging with 10,000 message buffer
 
 ## Requirements
 
