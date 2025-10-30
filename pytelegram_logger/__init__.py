@@ -6,7 +6,7 @@ from queue import Queue, Empty
 import requests
 from dataclasses import dataclass, field
 
-__all__ = ['init_telegram_logger', 'log']
+__all__ = ['init_telegram_logger', 'log', 'shutdown_logger']
 
 
 @dataclass
@@ -16,10 +16,16 @@ class LoggerState:
     telegram_token_errors: str | None = None
     telegram_chat_ids: list = field(default_factory=list)
     retention_days: int = 30
+    name: str = ""
     queue: Queue | None = None
     running: bool = False
     worker_thread: threading.Thread | None = None
     cleanup_thread: threading.Thread | None = None
+    
+    log_file: object = None
+    error_file: object = None
+    current_log_path: str = ""
+    current_error_path: str = ""
 
 
 state = LoggerState()
@@ -30,7 +36,8 @@ def init_telegram_logger(
     telegram_token_logs: str | None = None,
     telegram_token_errors: str | None = None,
     telegram_chat_ids: list | None = None,
-    retention_days: int = 30
+    retention_days: int = 30,
+    name: str = ""
 ):
     if state.running:
         return
@@ -42,6 +49,7 @@ def init_telegram_logger(
     state.telegram_token_errors = telegram_token_errors
     state.telegram_chat_ids = telegram_chat_ids or []
     state.retention_days = retention_days
+    state.name = name
     
     state.queue = Queue(maxsize=10000)
     state.running = True
@@ -56,17 +64,40 @@ def init_telegram_logger(
 def get_daily_file(is_error: bool = False) -> Path:
     now = datetime.now()
     prefix = "errors" if is_error else "logs"
-    filename = f"{prefix}_{now.year}_{now.month:02d}_{now.day:02d}.log"
+    
+    if state.name:
+        filename = f"{state.name}_{prefix}_{now.year}_{now.month:02d}_{now.day:02d}.log"
+    else:
+        filename = f"{prefix}_{now.year}_{now.month:02d}_{now.day:02d}.log"
+    
     return state.log_dir / filename
 
 
 def write_to_file(message: str, is_error: bool = False):
     filepath = get_daily_file(is_error)
+    filepath_str = str(filepath)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_type = "ERROR" if is_error else "INFO"
     
-    with open(filepath, "a", encoding="utf-8") as f:
-        f.write(f"[{timestamp}] [{log_type}] {message}\n")
+    if is_error:
+        if state.current_error_path != filepath_str:
+            if state.error_file:
+                state.error_file.close()
+            state.error_file = open(filepath, "a", encoding="utf-8", buffering=8192)
+            state.current_error_path = filepath_str
+        
+        file_handle = state.error_file
+    else:
+        if state.current_log_path != filepath_str:
+            if state.log_file:
+                state.log_file.close()
+            state.log_file = open(filepath, "a", encoding="utf-8", buffering=8192)
+            state.current_log_path = filepath_str
+        
+        file_handle = state.log_file
+    
+    file_handle.write(f"[{timestamp}] [{log_type}] {message}\n")
+    file_handle.flush()
 
 
 def send_telegram(message: str, is_error: bool = False):
@@ -103,16 +134,18 @@ def worker():
             
             message, is_error, send_telegram_flag, save_file = item
             
-            if save_file:
-                write_to_file(message, is_error)
-            
-            if send_telegram_flag:
-                send_telegram(message, is_error)
-            
-            state.queue.task_done()
+            try:
+                if save_file:
+                    write_to_file(message, is_error)
+                
+                if send_telegram_flag:
+                    send_telegram(message, is_error)
+            except:
+                pass
+            finally:
+                state.queue.task_done()
+                
         except Empty:
-            continue
-        except:
             continue
 
 
@@ -135,6 +168,30 @@ def cleanup_worker():
     while state.running:
         time.sleep(3600)
         cleanup_old_logs()
+
+
+def shutdown_logger():
+    if not state.running:
+        return
+    
+    state.running = False
+    
+    if state.queue:
+        state.queue.join()
+    
+    if state.log_file:
+        state.log_file.close()
+        state.log_file = None
+    
+    if state.error_file:
+        state.error_file.close()
+        state.error_file = None
+    
+    if state.worker_thread:
+        state.worker_thread.join(timeout=5)
+    
+    if state.cleanup_thread:
+        state.cleanup_thread.join(timeout=1)
 
 
 def log(message: str, is_error: bool = False, send_telegram: bool = False, save: bool = True):
