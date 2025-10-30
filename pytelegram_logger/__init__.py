@@ -174,10 +174,10 @@ def shutdown_logger():
     if not state.running:
         return
     
-    state.running = False
-    
     if state.queue:
         state.queue.join()
+    
+    state.running = False
     
     if state.log_file:
         state.log_file.close()
