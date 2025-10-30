@@ -72,11 +72,12 @@ def get_daily_file(is_error: bool = False) -> Path:
     
     return state.log_dir / filename
 
-
 def write_to_file(message: str, is_error: bool = False):
     filepath = get_daily_file(is_error)
     filepath_str = str(filepath)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    now = datetime.now()
+    timestamp = '%04d-%02d-%02d %02d:%02d:%02d' % (now.year, now.month, now.day, now.hour, now.minute, now.second)
     log_type = "ERROR" if is_error else "INFO"
     
     if is_error:
