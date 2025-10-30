@@ -36,13 +36,17 @@ state = LoggerState()
 
 
 def init_telegram_logger(
+    name: str = "",
     log_dir: str = "logs",
     telegram_token_logs: str | None = None,
     telegram_token_errors: str | None = None,
     telegram_chat_ids: list | None = None,
-    retention_days: int = 30,
-    name: str = ""
+    retention_days: int = 30
 ):
+    
+    if not name or name.strip() == "":
+        raise ValueError("Logger name must be provided, cannot be empty")
+
     if state.running:
         return
     
