@@ -141,4 +141,13 @@ def log(message: str, is_error: bool = False, send_telegram: bool = False, save:
     if not state.running or state.queue is None:
         raise RuntimeError("Logger not initialized. Call init_telegram_logger() first")
     
+    if send_telegram and not state.telegram_chat_ids:
+        raise ValueError("Telegram chat IDs not configured")
+    
+    if send_telegram and is_error and not state.telegram_token_errors:
+        raise ValueError("Telegram token for errors not configured")
+    
+    if send_telegram and not is_error and not state.telegram_token_logs:
+        raise ValueError("Telegram token for logs not configured")
+
     state.queue.put((message, is_error, send_telegram, save))
