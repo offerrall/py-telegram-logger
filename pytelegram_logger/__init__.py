@@ -91,7 +91,6 @@ def write_to_file(message: str, is_error: bool = False):
     
     now = datetime.now()
     timestamp = '%04d-%02d-%02d %02d:%02d:%02d' % (now.year, now.month, now.day, now.hour, now.minute, now.second)
-    log_type = "ERROR" if is_error else "INFO"
     
     if is_error:
         if state.current_error_path != filepath_str:
@@ -110,7 +109,7 @@ def write_to_file(message: str, is_error: bool = False):
         
         file_handle = state.log_file
     
-    file_handle.write(f"[{timestamp}] [{log_type}] {message}\n")
+    file_handle.write(f"[{timestamp}] {message}\n")
     file_handle.flush()
 
 
