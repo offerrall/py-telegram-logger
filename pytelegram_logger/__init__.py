@@ -36,17 +36,13 @@ state = LoggerState()
 
 
 def init_telegram_logger(
-    name: str = "",
     log_dir: str = "logs",
     telegram_token_logs: str | None = None,
     telegram_token_errors: str | None = None,
     telegram_chat_ids: list | None = None,
-    retention_days: int = 30
+    retention_days: int = 30,
+    name: str = ""
 ):
-    
-    if not name or name.strip() == "":
-        raise ValueError("Logger name must be provided, cannot be empty")
-
     if state.running:
         return
     
@@ -172,13 +168,18 @@ def cleanup_old_logs():
     
     cutoff_date = datetime.now() - timedelta(days=state.retention_days)
     
-    for log_file in state.log_dir.glob("*.log"):
-        try:
-            mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
-            if mtime < cutoff_date:
-                log_file.unlink()
-        except:
-            pass
+    # Only delete logs that belong to this logger instance
+    log_pattern = f"{state.name}_logs_*.log"
+    error_pattern = f"{state.name}_errors_*.log"
+    
+    for pattern in [log_pattern, error_pattern]:
+        for log_file in state.log_dir.glob(pattern):
+            try:
+                mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
+                if mtime < cutoff_date:
+                    log_file.unlink()
+            except:
+                pass
 
 
 def cleanup_worker():
