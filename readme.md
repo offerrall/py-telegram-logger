@@ -43,15 +43,41 @@ log("Processing data...")
 log("Database error", is_error=True)  # Saved to errors file
 ```
 
+### Multiple instances with separate files
+
+```python
+from pytelegram_logger import init_telegram_logger, log
+
+# Each instance can have its own log files
+init_telegram_logger(
+    log_dir="logs",
+    name="machine_1"  # Creates machine_1_logs_YYYY_MM_DD.log
+)
+
+log("Machine 1 started")
+```
+
+Result:
+```
+logs/
+├── machine_1_logs_2025_01_21.log
+├── machine_1_errors_2025_01_21.log
+├── machine_2_logs_2025_01_21.log
+└── machine_2_errors_2025_01_21.log
+```
+
 ## Features
 
+- **High performance**: 80,000+ logs/second (In window 10 and typical SSD)
 - **Local logging**: Automatic daily log files with configurable retention
 - **Telegram notifications**: Optional integration for real-time alerts
 - **Dual channels**: Separate tokens for regular logs vs errors (or use just one)
+- **Named instances**: Multiple loggers with separate files using `name` parameter
 - **Flexible**: Works with or without Telegram - you choose what to configure
 - **Clear errors**: Helpful error messages if Telegram features are used without proper setup
-- **Async & fast**: Non-blocking, thread-safe, 10,000+ logs/second
-- **Minimal**: ~150 lines of code, only requires `requests`
+- **Async & fast**: Non-blocking, thread-safe, queue-based worker
+- **Crash-safe**: Flush after every write ensures no data loss
+- **Minimal**: ~230 lines of code, only requires `requests`
 
 ## API
 
@@ -65,7 +91,8 @@ init_telegram_logger(
     telegram_token_logs=None,          # Bot token for general logs
     telegram_token_errors=None,        # Bot token for error alerts
     telegram_chat_ids=None,            # List of chat IDs to notify
-    retention_days=30                  # Auto-delete logs older than this
+    retention_days=30,                 # Auto-delete logs older than this
+    name=""                            # Optional: unique name for this instance
 )
 ```
 
@@ -81,6 +108,14 @@ log(message, is_error=False, send_telegram=False, save=True)
 - `send_telegram=True` → sends notification to Telegram
 - `save=False` → only sends to Telegram, doesn't write to file
 
+### `shutdown_logger()`
+
+Gracefully shutdown the logger (optional but recommended).
+
+```python
+shutdown_logger()  # Waits for queue to finish and closes files
+```
+
 ## File Structure
 
 Daily log files organized automatically:
@@ -90,7 +125,7 @@ logs/
 ├── logs_2025_01_21.log
 ├── logs_2025_01_22.log
 ├── errors_2025_01_21.log
-└── errors_2025_01_22.log
+└── errors_2025_01_21.log
 ```
 
 Files older than `retention_days` are deleted automatically (checked hourly).
@@ -98,7 +133,7 @@ Files older than `retention_days` are deleted automatically (checked hourly).
 ## Examples
 
 ```python
-from pytelegram_logger import init_telegram_logger, log
+from pytelegram_logger import init_telegram_logger, log, shutdown_logger
 import time
 
 # Initialize (Telegram is optional)
@@ -131,7 +166,7 @@ log(f"RX: {response}")
 if "ALARM" in response:
     log(f"ALARM: {response}", is_error=True, send_telegram=True)
 
-time.sleep(1)  # Allow async logs to complete before exit
+shutdown_logger()
 ```
 
 ## Use Cases
@@ -140,8 +175,20 @@ time.sleep(1)  # Allow async logs to complete before exit
 - **Automation scripts**: Track execution and catch errors
 - **IoT devices**: Monitor sensors and receive alerts
 - **Web scrapers**: Log progress and errors
-- **CNC/3D printers**: Track commands and catch alarms
+- **CNC/3D printers**: Track commands and catch alarms (can handle 300+ machines)
 - **Payment processing**: Audit transactions and alert on failures
+- **Industrial automation**: Multi-machine logging with separate files per machine
+
+## Shutting Down
+
+```python
+log("Program finished")
+shutdown_logger()  # Waits for queue + closes files cleanly
+```
+Guarantees:
+- All logs are written before exit
+- Files are closed properly
+- No logs are lost
 
 ## Error Handling
 
@@ -177,13 +224,6 @@ log("Normal log")  # Works: saved to file only
 log("Critical error", is_error=True, send_telegram=True)  # Works: file + Telegram
 log("Info", send_telegram=True)  # Error: telegram_token_logs not configured
 ```
-
-## Performance
-
-- < 1ms per log call (non-blocking)
-- 5,000+ logs/second throughput on typical hardware
-- Thread-safe for multi-threaded applications
-- Handles burst logging with 10,000 message buffer
 
 ## Requirements
 

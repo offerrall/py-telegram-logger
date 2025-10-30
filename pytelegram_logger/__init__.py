@@ -26,6 +26,10 @@ class LoggerState:
     error_file: object = None
     current_log_path: str = ""
     current_error_path: str = ""
+    
+    cached_date: str = ""
+    cached_log_path: Path | None = None
+    cached_error_path: Path | None = None
 
 
 state = LoggerState()
@@ -63,14 +67,23 @@ def init_telegram_logger(
 
 def get_daily_file(is_error: bool = False) -> Path:
     now = datetime.now()
-    prefix = "errors" if is_error else "logs"
+    date_str = f"{now.year}_{now.month:02d}_{now.day:02d}"
     
-    if state.name:
-        filename = f"{state.name}_{prefix}_{now.year}_{now.month:02d}_{now.day:02d}.log"
-    else:
-        filename = f"{prefix}_{now.year}_{now.month:02d}_{now.day:02d}.log"
+    if state.cached_date != date_str:
+        prefix_log = "logs"
+        prefix_error = "errors"
+        
+        if state.name:
+            state.cached_log_path = state.log_dir / f"{state.name}_{prefix_log}_{date_str}.log"
+            state.cached_error_path = state.log_dir / f"{state.name}_{prefix_error}_{date_str}.log"
+        else:
+            state.cached_log_path = state.log_dir / f"{prefix_log}_{date_str}.log"
+            state.cached_error_path = state.log_dir / f"{prefix_error}_{date_str}.log"
+        
+        state.cached_date = date_str
     
-    return state.log_dir / filename
+    return state.cached_error_path if is_error else state.cached_log_path
+
 
 def write_to_file(message: str, is_error: bool = False):
     filepath = get_daily_file(is_error)
