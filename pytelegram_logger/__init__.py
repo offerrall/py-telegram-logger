@@ -5,6 +5,7 @@ from pathlib import Path
 from queue import Queue, Empty
 import requests
 from dataclasses import dataclass, field
+import sys
 
 __all__ = ['init_telegram_logger', 'log', 'shutdown_logger']
 
@@ -42,7 +43,21 @@ def init_telegram_logger(
     telegram_chat_ids: list | None = None,
     retention_days: int = 30,
     name: str = ""
-):
+) -> None:
+    """Initialize the Telegram logger with specified configuration.
+    
+    Args:
+        log_dir: Directory where log files will be stored
+        telegram_token_logs: Bot token for general log notifications
+        telegram_token_errors: Bot token for error notifications
+        telegram_chat_ids: List of Telegram chat IDs to send notifications to
+        retention_days: Number of days to keep log files before auto-deletion
+        name: Unique identifier for this logger instance (required)
+        
+    Raises:
+        RuntimeError: If logger is already initialized
+        ValueError: If name is empty or whitespace
+    """
     if state.running:
         raise RuntimeError("Logger already initialized")
     
@@ -69,6 +84,14 @@ def init_telegram_logger(
 
 
 def get_daily_file(is_error: bool = False) -> Path:
+    """Get the path for today's log file.
+    
+    Args:
+        is_error: If True, return error log path; otherwise return general log path
+        
+    Returns:
+        Path object for the appropriate log file
+    """
     now = datetime.now()
     date_str = f"{now.year}_{now.month:02d}_{now.day:02d}"
     
@@ -88,7 +111,13 @@ def get_daily_file(is_error: bool = False) -> Path:
     return state.cached_error_path if is_error else state.cached_log_path
 
 
-def write_to_file(message: str, is_error: bool = False):
+def write_to_file(message: str, is_error: bool = False) -> None:
+    """Write a log message to the appropriate file.
+    
+    Args:
+        message: The log message to write
+        is_error: If True, write to error log; otherwise write to general log
+    """
     filepath = get_daily_file(is_error)
     filepath_str = str(filepath)
     
@@ -116,7 +145,13 @@ def write_to_file(message: str, is_error: bool = False):
     file_handle.flush()
 
 
-def send_telegram(message: str, is_error: bool = False):
+def send_telegram(message: str, is_error: bool = False) -> None:
+    """Send a log message to Telegram.
+    
+    Args:
+        message: The log message to send
+        is_error: If True, use error token and prefix; otherwise use log token
+    """
     token = state.telegram_token_errors if is_error else state.telegram_token_logs
     
     if not token or not state.telegram_chat_ids:
@@ -136,11 +171,14 @@ def send_telegram(message: str, is_error: bool = False):
             }
             requests.post(url, json=data, timeout=5)
             time.sleep(0.05)
-        except:
-            pass
+        except requests.RequestException as e:
+            print(f"[pytelegram_logger] Telegram API error for chat {chat_id}: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"[pytelegram_logger] Unexpected error sending to Telegram chat {chat_id}: {e}", file=sys.stderr)
 
 
-def worker():
+def worker() -> None:
+    """Background worker thread that processes log messages from the queue."""
     while state.running:
         try:
             item = state.queue.get(timeout=1)
@@ -156,8 +194,8 @@ def worker():
                 
                 if send_telegram_flag:
                     send_telegram(message, is_error)
-            except:
-                pass
+            except Exception as e:
+                print(f"[pytelegram_logger] Error processing log message: {e}", file=sys.stderr)
             finally:
                 state.queue.task_done()
                 
@@ -165,13 +203,13 @@ def worker():
             continue
 
 
-def cleanup_old_logs():
+def cleanup_old_logs() -> None:
+    """Delete log files older than the configured retention period."""
     if state.log_dir is None:
         return
     
     cutoff_date = datetime.now() - timedelta(days=state.retention_days)
     
-    # Only delete logs that belong to this logger instance
     log_pattern = f"{state.name}_logs_*.log"
     error_pattern = f"{state.name}_errors_*.log"
     
@@ -181,17 +219,24 @@ def cleanup_old_logs():
                 mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
                 if mtime < cutoff_date:
                     log_file.unlink()
-            except:
-                pass
+            except (OSError, ValueError) as e:
+                print(f"[pytelegram_logger] Error deleting old log file {log_file}: {e}", file=sys.stderr)
+            except Exception as e:
+                print(f"[pytelegram_logger] Unexpected error during cleanup of {log_file}: {e}", file=sys.stderr)
 
 
-def cleanup_worker():
+def cleanup_worker() -> None:
+    """Background worker thread that periodically cleans up old log files."""
     while state.running:
         time.sleep(3600)
         cleanup_old_logs()
 
 
-def shutdown_logger():
+def shutdown_logger() -> None:
+    """Gracefully shutdown the logger and close all resources.
+    
+    Waits for all queued messages to be processed before shutting down.
+    """
     if not state.running:
         return
     
@@ -215,7 +260,19 @@ def shutdown_logger():
         state.cleanup_thread.join(timeout=1)
 
 
-def log(message: str, is_error: bool = False, send_telegram: bool = False, save: bool = True):
+def log(message: str, is_error: bool = False, send_telegram: bool = False, save: bool = True) -> None:
+    """Log a message to file and/or Telegram.
+    
+    Args:
+        message: The message to log
+        is_error: If True, treat as error (different file and Telegram token)
+        send_telegram: If True, send notification to Telegram
+        save: If True, save to log file; if False, only send to Telegram
+        
+    Raises:
+        RuntimeError: If logger not initialized
+        ValueError: If Telegram is requested but not properly configured
+    """
     if not state.running or state.queue is None:
         raise RuntimeError("Logger not initialized. Call init_telegram_logger() first")
     
