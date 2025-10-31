@@ -44,7 +44,10 @@ def init_telegram_logger(
     name: str = ""
 ):
     if state.running:
-        return
+        raise RuntimeError("Logger already initialized")
+    
+    if not name or name.strip() == "":
+        raise ValueError("Logger name must be provided, cannot be empty")
     
     state.log_dir = Path(log_dir)
     state.log_dir.mkdir(exist_ok=True)
