@@ -18,5 +18,5 @@ Homepage = "https://github.com/offerrall/py-telegram-logger"
 Repository = "https://github.com/offerrall/py-telegram-logger"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["pytelegram_logger*"]
