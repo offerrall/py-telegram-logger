@@ -1,7 +1,6 @@
 # easy_tg_logger
 
 [![PyPI version](https://img.shields.io/pypi/v/easy-tg-logger.svg)](https://pypi.org/project/easy-tg-logger/)
-[![Python](https://img.shields.io/pypi/pyversions/easy-tg-logger.svg)](https://pypi.org/project/easy-tg-logger/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Fast, minimal async logger for local files with optional Telegram alerts. **Zero dependencies** (stdlib only).
