@@ -1,7 +1,7 @@
-# py-telegram-logger
+# easy_tg_logger
 
-[![PyPI version](https://img.shields.io/pypi/v/py-telegram-logger.svg)](https://pypi.org/project/py-telegram-logger/)
-[![Python](https://img.shields.io/pypi/pyversions/py-telegram-logger.svg)](https://pypi.org/project/py-telegram-logger/)
+[![PyPI version](https://img.shields.io/pypi/v/easy-tg-logger.svg)](https://pypi.org/project/easy-tg-logger/)
+[![Python](https://img.shields.io/pypi/pyversions/easy-tg-logger.svg)](https://pypi.org/project/easy-tg-logger/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Fast, minimal async logger for local files with optional Telegram alerts. **Zero dependencies** (stdlib only).
@@ -9,7 +9,7 @@ Fast, minimal async logger for local files with optional Telegram alerts. **Zero
 ## Install
 
 ```bash
-pip install py-telegram-logger
+pip install easy_tg_logger
 ```
 
 ## Usage
